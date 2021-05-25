@@ -54,6 +54,18 @@ def main(argv):
             temp_y = random.choice(r_height)
             mines.append([temp_x,temp_y])
 
+    #first record(iteration 0)
+    twoD = []
+    for i in range(0,height):
+       temp = []
+
+       for j in range(0,width):
+            temp.append(0)
+
+       twoD.append(temp)
+    twoD[startpos[1]][startpos[0]] = 1
+    twoD[endpos[1]][endpos[0]] = 100
+    records.append(twoD)
 
 
 if __name__ == '__main__':
