@@ -20,6 +20,8 @@ gamma = 0.8
 k = 3
 mines = []
 records = []
+opt = []
+
 
 def checkmine(test,array):
     return any(numpy.array_equal(x, test) for x in array)
@@ -33,7 +35,6 @@ def check_conv():
 
 
 def V_Iteration():
-    print()
     count = 0
     maxarray = [0,0,0,0,0]
     while count == 0:
@@ -60,9 +61,46 @@ def V_Iteration():
 
 
         records.append(temparray)
-        print(check_conv())
         if check_conv() == True:
             break
+
+
+def optimal():
+    global opt
+    temparray = records[len(records) - 1]
+    maxarray = [0, 0, 0, 0]
+    count = 0
+    x = startpos[1]
+    y = startpos[0]
+    # append the start position first
+    opt.append(startpos)
+    while count == 0:
+
+        if x == endpos[1] and y == endpos[0]:
+            break;
+        # up
+        if x != 0:
+            maxarray[0] = temparray[x - 1][y]
+        # down
+        if x != height - 1:
+            maxarray[1] = temparray[x + 1][y]
+        # left
+        if y != 0:
+            maxarray[2] = temparray[x][y - 1]
+        # right
+        if y != width - 1:
+            maxarray[3] = temparray[x][y + 1]
+        max_value = max(maxarray)
+        max_index = numpy.where(maxarray == max_value)
+        if max_index[0][0] == 0:
+            x -= 1
+        elif max_index[0][0] == 1:
+            x += 1
+        elif max_index[0][0] == 2:
+            y -= 1
+        elif max_index[0][0] == 3:
+            y += 1
+        opt.append([y, x])
 
 def main(argv):
 
@@ -106,4 +144,11 @@ def main(argv):
 
 if __name__ == '__main__':
     main(sys.argv[1:])
+    V_Iteration()
+    optimal()
 
+    anim, fig, ax = generateAnimat(records, startpos, endpos, mines=mines, opt_pol=opt,
+                                   start_val=-10, end_val=100, mine_val=150, just_vals=False, generate_gif=False,
+                                   vmin=-10, vmax=150)
+
+    plt.show()
