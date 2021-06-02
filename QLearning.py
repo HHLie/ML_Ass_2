@@ -1,5 +1,6 @@
 # CSC3022F - RL Assignment 2
 # Part 2
+
 # packages
 import matplotlib.pyplot as plt
 import sys
@@ -20,8 +21,8 @@ k = 3
 mines = []
 records = []
 opt = []
-epoch = 50
-learning_rate = 0.5
+epoch = 500
+learning_rate = 0.3
 
 # used to check if given coord test is within the given array, i used this mostly to check if the coord is a mine
 def checkmine(test, array):
@@ -39,27 +40,25 @@ def Q_learn():
     e = 10
     #epoch loop
     for i in range(epoch):
-        if e > 2:
-            #decay the e greedy value
-            e = e - e*(i/epoch)
         if learning_rate <= 0.01:
             break
         r_height = [*range(0, height)]
         r_width = [*range(0, width)]
         count = 0
-        #choose random position till random end state
-        while randpos != endpos:
+        # generate random position till not mine or end state
+        while True:
+            randpos.clear()
+            temp_x = random.choice(r_width)
+            temp_y = random.choice(r_height)
+            if checkmine([temp_x, temp_y], mines):
+                count += 0
+            else:
+                randpos = [temp_x, temp_y]
+                break
+        #choose random position move till terminal state
+        while randpos != endpos or not checkmine(randpos,mines):
+
             count += 1
-            #generate random position till not mine or end state
-            while True:
-                randpos.clear()
-                temp_x = random.choice(r_width)
-                temp_y = random.choice(r_height)
-                if checkmine([temp_x, temp_y], mines):
-                    count += 0
-                else:
-                    randpos = [temp_x, temp_y]
-                    break
             # choose action
             action = ["up", "down", "left", "right"]
             max_ar = []
@@ -85,47 +84,60 @@ def Q_learn():
                 next_action = [randpos[0] +1, randpos[1]]
 
             # get max of next states
+            temp_pos = randpos.copy()
+            temp_max = 0
             for i in range(len(action)):
                 if "up" == action[i]:
                     max_ar.append(Q[randpos[1] - 1][randpos[0]])
+                    if Q[randpos[1] - 1][randpos[0]] >= temp_max:
+                        temp_max = Q[randpos[1] - 1][randpos[0]].copy()
+                        temp_pos = [randpos[0],randpos[1] - 1]
                 if "down" == action[i]:
                     max_ar.append(Q[randpos[1] + 1][randpos[0]])
+                    if Q[randpos[1] + 1][randpos[0]] >= temp_max:
+                        temp_max = Q[randpos[1] + 1][randpos[0]].copy()
+                        temp_pos = [randpos[0],randpos[1] + 1]
                 if "left" == action[i]:
                     max_ar.append(Q[randpos[1]][randpos[0] - 1])
+                    if Q[randpos[1]][randpos[0]-1] >= temp_max:
+                        temp_max = Q[randpos[1]][randpos[0]-1].copy()
+                        temp_pos = [randpos[0]-1,randpos[1]]
                 if "right" == action[i]:
                     max_ar.append(Q[randpos[1]][randpos[0] + 1])
+                    if Q[randpos[1]][randpos[0]+1] >= temp_max:
+                        temp_max = Q[randpos[1]][randpos[0]-1].copy()
+                        temp_pos = [randpos[0]+1,randpos[1]]
             currentQ = Q[randpos[1]][randpos[0]]
             factor = random.randint(1, 10)
-
-            #if random number 1-10 is less than e greedy value, choose random action
+            # if random number 1-10 is less than e greedy value, choose random action
+            # 1-10 is the same as using e{0,1}
             if factor < int(e):
                 #compute reward value for random action
-                Q[randpos[1]][randpos[0]] = math.floor(currentQ + learning_rate * (R[randpos[1]][randpos[0]] + (gamma * Q[next_action[1]][next_action[0]] - currentQ)))
+                Q[randpos[1]][randpos[0]] = math.floor(currentQ + learning_rate*(R[randpos[1]][randpos[0]] + (gamma * Q[next_action[1]][next_action[0]] - currentQ)))
+                randpos = next_action
             else:
                 # compute reward value for best action
                 Q[randpos[1]][randpos[0]] = math.ceil(currentQ + learning_rate*(R[randpos[1]][randpos[0]] + (gamma * max(max_ar) - currentQ)))
+                randpos = temp_pos
+
+            if(randpos == temp_pos):
+                break
 
             max_ar.clear()
 
         records.append(Q.copy())
         #decay the learning rate
         learning_rate = learning_rate - learning_rate*(1 / (epoch + i + count))
-
-        while True:
-            randpos.clear()
-            temp_x = random.choice(r_width)
-            temp_y = random.choice(r_height)
-            if checkmine([temp_x, temp_y], mines):
-                count += 0
-            else:
-                randpos = [temp_x, temp_y]
-                break
+        if e > 1:
+            e = e - e*(i/(epoch/2))
 
 
 # get the optimal position by looking for the max value of the neighbouring states
 def optimal():
     global opt
-    temparray = records[len(records) - 1]
+    temparray = records[len(records) - 1].copy()
+    for i in range(len(mines)):
+        temparray[mines[i][1]][mines[i][0]] = -5000
     count = 0
     x = startpos[1]
     y = startpos[0]
@@ -134,23 +146,25 @@ def optimal():
     while count == 0:
         oldx = x
         oldy = y
-        maxarray = [0, 0, 0, 0]
+        maxarray = [-100, -100, -100, -100]
         if x == endpos[1] and y == endpos[0]:
             break;
         # up
-        if x > 0:
+        if x > 0 and not checkmine((y,x - 1), mines):
             maxarray[0] = temparray[x - 1][y]
         # down
-        if x < height - 1:
+        if x < height - 1 and not checkmine((y,x + 1),mines):
             maxarray[1] = temparray[x + 1][y]
         # left
-        if y > 0:
+        if y > 0 and not checkmine((y-1,x),mines):
             maxarray[2] = temparray[x][y - 1]
         # right
-        if y < width - 1:
+        if y < width - 1 and not checkmine((y+1,x),mines):
             maxarray[3] = temparray[x][y + 1]
         max_value = max(maxarray)
+        #print(maxarray)
         max_index = numpy.where(maxarray == max_value)
+
         max_i = numpy.argmax(maxarray)
         if len(max_index[0]) - 1 < 0:
             return False
@@ -163,7 +177,7 @@ def optimal():
         elif max_i == 3:
             y += 1
         opt.append([y, x])
-        temparray[oldx][oldy] = -1
+        temparray[oldx][oldy] = -100
     return True
 
 
@@ -175,6 +189,19 @@ def main(argv):
     height = int(argv[1])
     endpos = [width - 1, height - 1]
     startpos = [0, 0]
+
+    r_height = [*range(0, height)]
+    r_width = [*range(0, width)]
+    temp_x = random.choice(r_width)
+    temp_y = random.choice(r_height)
+    startpos = [temp_x,temp_y]
+    endpos = [random.choice(r_width),random.choice(r_height)]
+    while True:
+        if [temp_x, temp_y] == endpos:
+            endpos = [random.choice(r_width),random.choice(r_height)]
+        else:
+            break
+
     while count < len(argv):
         if argv[count] == "-start":
             startpos = [int(argv[count + 1]), int(argv[count + 2])]
@@ -193,7 +220,7 @@ def main(argv):
         count += 1
 
     temptwo = numpy.zeros((height, width), dtype=int)
-
+    #temptwo = numpy.full((height, width), -1, dtype=int)
     # set mines
 
     if k > 0:
@@ -212,6 +239,7 @@ def main(argv):
             else:
                 mines.append([temp_x, temp_y])
 
+    #mines = [[2,2],[3,2],[4,2],[5,2],[6,2],[6,3],[6,4],[6,6],[5,6],[4,6],[3,6],[2,6],[2,5],[2,4],[2,3]]
     # first record(iteration 0)
     temptwo[endpos[1]][endpos[0]] = 100
     records.append(temptwo)
