@@ -38,6 +38,7 @@ def V_Iteration():
     while count == 0:
         temparray = records[len(records) - 1].copy()
         pusharray = numpy.zeros((height, width), dtype=int)
+        #for each grid compute the value function
         for i in range(0, height):
             for j in range(0, width):
                 if checkmine([j, i], mines) == False:
@@ -113,6 +114,7 @@ def main(argv):
     endpos = [width - 1, height - 1]
     startpos = [0, 0]
 
+    # get random start and end points
     r_height = [*range(0, height)]
     r_width = [*range(0, width)]
     temp_x = random.choice(r_width)
@@ -126,21 +128,25 @@ def main(argv):
             break
 
     while count < len(argv):
+        # set start point
         if argv[count] == "-start":
             startpos = [int(argv[count + 1]), int(argv[count + 2])]
             count += 1
+        # set end point
         elif argv[count] == "-end":
             endpos = [int(argv[count + 1]), int(argv[count + 2])]
             count += 1
+        # set gamma
         elif argv[count] == "-gamma":
             gamma = float(argv[count + 1])
+        # set number of bombs
         elif argv[count] == "-k":
             k = int(argv[count + 1])
         count += 1
 
     temptwo = numpy.zeros((height, width), dtype=int)
 
-    # set mines
+    # generate and set mines
     if k > 0:
         r_height = [*range(0, height)]
         r_width = [*range(0, width)]

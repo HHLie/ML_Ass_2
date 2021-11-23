@@ -22,7 +22,7 @@ mines = []
 records = []
 opt = []
 epoch = 500
-learning_rate = 0.3
+learning_rate = 0.4
 
 # used to check if given coord test is within the given array, i used this mostly to check if the coord is a mine
 def checkmine(test, array):
@@ -32,10 +32,10 @@ def checkmine(test, array):
 def Q_learn():
     global gamma, records, endpos, learning_rate
     R = records[len(records) - 1].copy()
+    # set the bombs in the reward array
     for i in range(len(mines)):
         R[mines[i][1]][mines[i][0]] = -50
     Q = R.copy()
-    #Q = numpy.zeros((height, width), dtype=int)
     randpos = []
     e = 10
     #epoch loop
@@ -55,7 +55,7 @@ def Q_learn():
             else:
                 randpos = [temp_x, temp_y]
                 break
-        #choose random position move till terminal state
+        #choose random position then move till terminal state
         while randpos != endpos or not checkmine(randpos,mines):
 
             count += 1
@@ -72,7 +72,8 @@ def Q_learn():
                 action.remove("left")
             if randpos[0] == width - 1:
                 action.remove("right")
-            # get next random action
+
+            # get next random action and position of that state
             choice = random.choice(action)
             if choice == "up":
                 next_action = [randpos[0],randpos[1]-1]
@@ -83,7 +84,7 @@ def Q_learn():
             if choice == "right":
                 next_action = [randpos[0] +1, randpos[1]]
 
-            # get max of next states
+            # get max of next states and position of that state
             temp_pos = randpos.copy()
             temp_max = 0
             for i in range(len(action)):
@@ -109,16 +110,17 @@ def Q_learn():
                         temp_pos = [randpos[0]+1,randpos[1]]
             currentQ = Q[randpos[1]][randpos[0]]
             factor = random.randint(1, 10)
+
             # if random number 1-10 is less than e greedy value, choose random action
             # 1-10 is the same as using e{0,1}
             if factor < int(e):
                 #compute reward value for random action
                 Q[randpos[1]][randpos[0]] = math.floor(currentQ + learning_rate*(R[randpos[1]][randpos[0]] + (gamma * Q[next_action[1]][next_action[0]] - currentQ)))
-                randpos = next_action
+                randpos = next_action # move to the state
             else:
                 # compute reward value for best action
                 Q[randpos[1]][randpos[0]] = math.ceil(currentQ + learning_rate*(R[randpos[1]][randpos[0]] + (gamma * max(max_ar) - currentQ)))
-                randpos = temp_pos
+                randpos = temp_pos # move to the state
 
             if(randpos == temp_pos):
                 break
@@ -190,6 +192,7 @@ def main(argv):
     endpos = [width - 1, height - 1]
     startpos = [0, 0]
 
+    # get random start and end points
     r_height = [*range(0, height)]
     r_width = [*range(0, width)]
     temp_x = random.choice(r_width)
@@ -203,24 +206,30 @@ def main(argv):
             break
 
     while count < len(argv):
+        # set start point
         if argv[count] == "-start":
             startpos = [int(argv[count + 1]), int(argv[count + 2])]
             count += 1
+        # set end point
         elif argv[count] == "-end":
             endpos = [int(argv[count + 1]), int(argv[count + 2])]
             count += 1
+        # set gamma
         elif argv[count] == "-gamma":
             gamma = float(argv[count + 1])
+        # set number of bombs
         elif argv[count] == "-k":
             k = int(argv[count + 1])
+        # set epoch
         elif argv[count] == "-epoch":
             epoch = int(argv[count + 1])
+        #set learning rate
         elif argv[count] == "-learning":
             learning_rate = float(argv[count + 1])
         count += 1
 
-    temptwo = numpy.zeros((height, width), dtype=int)
-    #temptwo = numpy.full((height, width), -1, dtype=int)
+    #temptwo = numpy.zeros((height, width), dtype=int)
+    temptwo = numpy.full((height, width), -1, dtype=int)
     # set mines
 
     if k > 0:
@@ -240,7 +249,7 @@ def main(argv):
                 mines.append([temp_x, temp_y])
 
     #mines = [[2,2],[3,2],[4,2],[5,2],[6,2],[6,3],[6,4],[6,6],[5,6],[4,6],[3,6],[2,6],[2,5],[2,4],[2,3]]
-    # first record(iteration 0)
+    # append first record(iteration 0)
     temptwo[endpos[1]][endpos[0]] = 100
     records.append(temptwo)
 
